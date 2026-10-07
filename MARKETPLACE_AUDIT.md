@@ -42,6 +42,13 @@ A record of the diligence behind publishing this template.
 
 None required. `REDIS_PASSWORD` is generated; everything else has a default.
 
+## Live verification (2026-10-07)
+
+Clean-room deploy of the template: both services SUCCESS. `tests/railway-smoke.sh` over HTTPS 38/38; after a yopass
+redeploy and then a valkey redeploy (AOF reload) the planted secrets survived (5/5 each), the surviving one-time
+secret read once then 404 (3/3); a 1-hour secret was 404 after 3620 s while a 1-week secret remained (4/4).
+Published as https://railway.com/deploy/yopass.
+
 ## Verdict
 
 **SHIPPABLE**, no wrapper.
