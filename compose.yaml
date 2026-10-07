@@ -1,0 +1,46 @@
+# Local test topology. Mirrors the Railway service graph:
+#   valkey -> Valkey (Redis-compatible) secret store, own volume, append-only file, private
+#   yopass -> the official Yopass image, unmodified; the only public service
+name: yopass-railway-test
+
+networks:
+  default:
+    name: yopass-railway-test
+
+services:
+  valkey:
+    image: valkey/valkey:9.1.2-alpine@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
+    restart: unless-stopped
+    # Same command as the Railway template's start command.
+    command:
+      - sh
+      - -c
+      - exec docker-entrypoint.sh valkey-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory "$${VALKEY_MAXMEMORY:-256mb}" --maxmemory-policy volatile-ttl
+    environment:
+      REDIS_PASSWORD: local-test-only-valkey-password
+      VALKEY_MAXMEMORY: 256mb
+    volumes:
+      - valkey:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" valkey-cli ping | grep -q PONG']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  yopass:
+    image: jhaals/yopass:14.10.0@sha256:6c33d9c813f77bae70787e1bce76710840ff654f454998b01f8dacc0a7988fd3
+    restart: unless-stopped
+    depends_on:
+      valkey: { condition: service_healthy }
+    environment:
+      PORT: '1337'
+      DATABASE: redis
+      REDIS: redis://default:local-test-only-valkey-password@valkey:6379/0
+      CORS_ALLOW_ORIGIN: http://127.0.0.1:${YOPASS_TEST_PORT:-18337}
+      MAX_LENGTH: '10000'
+      DEFAULT_EXPIRY: 1h
+    ports:
+      - '127.0.0.1:${YOPASS_TEST_PORT:-18337}:1337'
+
+volumes:
+  valkey:

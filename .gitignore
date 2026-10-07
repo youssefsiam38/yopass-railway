@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+/test-output/
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.railway/
+__pycache__/
+*.pyc
